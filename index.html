@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý & Đặt Nước 20L KTX</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans antialiased pb-20">
+
+    <!-- Thanh tiêu đề ứng dụng -->
+    <header class="bg-blue-600 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <span class="text-2xl">🚰</span>
+                <div>
+                    <h1 class="font-bold text-base md:text-lg leading-tight">QUẢN LÝ BÁN NƯỚC 20L KTX</h1>
+                    <p class="text-xs text-blue-100">3 Kho: Nhà B • Nhà C1 • Nhà C2</p>
+                </div>
+            </div>
+            <div id="nav-mode-badge" class="bg-blue-700 px-3 py-1 rounded-full text-xs font-semibold border border-blue-500">
+                Đang tải...
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-3 py-4">
+
+        <!-- ================= GIAO DIỆN SINH VIÊN (Chỉ thấy đơn của mình) ================= -->
+        <div id="view-student" class="space-y-4 hidden">
+            <div class="bg-white rounded-xl shadow-sm p-4 border border-blue-100">
+                <div class="flex items-center space-x-2 mb-3">
+                    <span class="bg-blue-100 text-blue-700 p-2 rounded-lg text-lg">📝</span>
+                    <div>
+                        <h2 class="font-bold text-base text-blue-900">PHIẾU ĐẶT NƯỚC 20L KTX</h2>
+                        <p class="text-xs text-slate-500">Điền thông tin để kho giao nước tận phòng</p>
+                    </div>
+                </div>
+
+                <form id="form-order" class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Họ và tên sinh viên *</label>
+                        <input type="text" id="std-name" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ví dụ: Nguyễn Văn A">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Số điện thoại *</label>
+                            <input type="tel" id="std-phone" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0912345678">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Số phòng ở *</label>
+                            <input type="text" id="std-room" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ví dụ: P.305">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Chọn Tòa nhà (Kho) *</label>
+                            <select id="std-building" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white font-semibold text-blue-700">
+                                <option value="Nhà B">Kho Nhà B</option>
+                                <option value="Nhà C1">Kho Nhà C1</option>
+                                <option value="Nhà C2">Kho Nhà C2</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Số lượng bình (20L) *</label>
+                            <input type="number" id="std-qty" min="1" value="1" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-600">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow transition duration-200 text-sm flex items-center justify-center space-x-2">
+                        <span>🚀 GỬI ĐƠN ĐẶT NƯỚC NGAY</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Khu vực lịch sử đơn cá nhân của sinh viên -->
+            <div class="bg-white rounded-xl shadow-sm p-4 border border-slate-200">
+                <h3 class="font-bold text-sm text-slate-800 mb-2 flex items-center justify-between">
+                    <span>📦 Đơn hàng của bạn đã gửi</span>
+                    <button onclick="loadMyOrders()" class="text-xs text-blue-600 hover:underline">🔄 Làm mới</button>
+                </h3>
+                <div id="my-orders-list" class="space-y-2">
+                    <p class="text-xs text-slate-400 text-center py-4">Chưa có đơn hàng nào được gửi từ thiết bị này.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= GIAO DIỆN CHỦ KHO (Quản lý tất cả) ================= -->
+        <div id="view-admin" class="space-y-4 hidden">
+            <!-- Thống kê kho nhanh -->
+            <div class="bg-white rounded-xl shadow-sm p-3 border border-slate-200">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="font-bold text-xs uppercase tracking-wider text-slate-500">📊 Tồn kho 3 Tòa hiện tại</h2>
+                    <span id="admin-total-stock" class="text-xs bg-slate-100 px-2 py-0.5 rounded font-bold">Tổng: 60 bình</span>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div class="bg-blue-50 p-2 rounded-lg border border-blue-100">
+                        <div class="text-xs text-blue-600 font-semibold">Nhà B</div>
+                        <div id="stock-nha-b" class="text-lg font-bold text-blue-700">20</div>
+                        <div class="text-[10px] text-slate-500">Vỏ: <span id="vouch-nha-b">0</span></div>
+                    </div>
+                    <div class="bg-emerald-50 p-2 rounded-lg border border-emerald-100">
+                        <div class="text-xs text-emerald-600 font-semibold">Nhà C1</div>
+                        <div id="stock-nha-c1" class="text-lg font-bold text-emerald-700">20</div>
+                        <div class="text-[10px] text-slate-500">Vỏ: <span id="vouch-nha-c1">0</span></div>
+                    </div>
+                    <div class="bg-amber-50 p-2 rounded-lg border border-amber-100">
+                        <div class="text-xs text-amber-600 font-semibold">Nhà C2</div>
+                        <div id="stock-nha-c2" class="text-lg font-bold text-amber-700">20</div>
+                        <div class="text-[10px] text-slate-500">Vỏ: <span id="vouch-nha-c2">0</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Danh sách đơn hàng đến -->
+            <div class="bg-white rounded-xl shadow-sm p-4 border border-slate-200">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-bold text-sm text-slate-800 flex items-center space-x-1">
+                        <span>📋 Danh Sách Đơn Đặt Nước</span>
+                        <span id="badge-order-count" class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">0</span>
+                    </h3>
+                    <div class="space-x-1">
+                        <button onclick="syncCloudData()" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-2.5 py-1 rounded text-xs font-semibold">🔄 Quét đơn</button>
+                        <button onclick="clearAllOrders()" class="text-slate-400 hover:text-red-500 text-xs px-2 py-1">Xóa hết</button>
+                    </div>
+                </div>
+
+                <div id="admin-orders-list" class="space-y-3">
+                    <div class="text-center py-6 text-slate-400 text-xs">Chưa có đơn hàng nào từ sinh viên.</div>
+                </div>
+            </div>
+
+            <!-- Khu vực lấy Link & QR gửi SV -->
+            <div class="bg-white rounded-xl shadow-sm p-4 border border-slate-200">
+                <h3 class="font-bold text-sm text-slate-800 mb-2">📱 Link & Mã QR Đặt Nước Cho Sinh Viên</h3>
+                <p class="text-xs text-slate-500 mb-3">Sao chép đường link này dán lên nhóm Zalo hoặc in mã QR dán tại các tòa nhà:</p>
+                <div class="flex items-center space-x-2 mb-3">
+                    <input type="text" id="share-link-input" readonly class="w-full bg-slate-50 border px-3 py-1.5 rounded text-xs text-slate-600 select-all" value="">
+                    <button onclick="copyShareLink()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-semibold whitespace-nowrap">📋 Copy Link</button>
+                </div>
+                <div id="qrcode-box" class="flex justify-center p-2 bg-slate-50 rounded border border-dashed"></div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Âm thanh thông báo chuông "Tinh" -->
+    <audio id="audio-bell" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+
+    <script>
+        const CHANNEL_NAME = "ktx_nuoc20l_nha_b_c1_c2_v5_fix";
+        let orders = JSON.parse(localStorage.getItem('ktx_orders')) || [];
+        let stocks = JSON.parse(localStorage.getItem('ktx_stocks')) || {
+            "Nhà B": { stock: 20, vouch: 0 },
+            "Nhà C1": { stock: 20, vouch: 0 },
+            "Nhà C2": { stock: 20, vouch: 0 }
+        };
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const isStudentMode = urlParams.get('mode') === 'sv';
+
+        window.onload = function() {
+            let cleanUrl = window.location.href.split('?')[0];
+            let svLink = cleanUrl + "?mode=sv";
+            document.getElementById('share-link-input').value = svLink;
+
+            const qrContainer = document.getElementById("qrcode-box");
+            if(qrContainer) {
+                qrContainer.innerHTML = "";
+                new QRCode(qrContainer, { text: svLink, width: 120, height: 120 });
+            }
+
+            if (isStudentMode) {
+                document.getElementById('view-student').classList.remove('hidden');
+                document.getElementById('view-admin').classList.add('hidden');
+                document.getElementById('nav-mode-badge').innerText = "🎓 Cổng Đặt Nước SV";
+                loadMyOrders();
+            } else {
+                document.getElementById('view-admin').classList.remove('hidden');
+                document.getElementById('view-student').classList.add('hidden');
+                document.getElementById('nav-mode-badge').innerText = "👑 Chủ Kho Quản Lý";
+                updateAdminDashboard();
+            }
+
+            initCloudStream();
+        };
+
+        document.getElementById('form-order').addEventListener('submit', function(e) {
+            e.preventDefault();
+            let newOrder = {
+                id: 'ORD-' + Date.now().toString().slice(-6),
+                name: document.getElementById('std-name').value.trim(),
+                phone: document.getElementById('std-phone').value.trim(),
+                room: document.getElementById('std-room').value.trim(),
+                building: document.getElementById('std-building').value,
+                qty: parseInt(document.getElementById('std-qty').value) || 1,
+                time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date().toLocaleDateString('vi-VN'),
+                status: 'Chờ giao',
+                deviceKey: getMyDeviceKey()
+            };
+
+            orders.unshift(newOrder);
+            saveAndSync();
+
+            let myDevOrders = JSON.parse(localStorage.getItem('my_sent_orders')) || [];
+            myDevOrders.unshift(newOrder);
+            localStorage.setItem('my_sent_orders', JSON.stringify(myDevOrders));
+
+            alert("✅ Đặt nước thành công! Kho đã nhận được đơn của bạn.");
+            document.getElementById('form-order').reset();
+            loadMyOrders();
+        });
+
+        function getMyDeviceKey() {
+            let key = localStorage.getItem('my_dev_key');
+            if(!key) {
+                key = 'DEV-' + Math.random().toString(36).substring(2, 9);
+                localStorage.setItem('my_dev_key', key);
+            }
+            return key;
+        }
+
+        function loadMyOrders() {
+            let myDevOrders = JSON.parse(localStorage.getItem('my_sent_orders')) || [];
+            let container = document.getElementById('my-orders-list');
+            if (myDevOrders.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">Chưa có đơn hàng nào được gửi từ thiết bị này.</p>`;
+                return;
+            }
+            container.innerHTML = myDevOrders.map(o => `
+                <div class="p-3 bg-slate-50 border rounded-lg text-xs space-y-1">
+                    <div class="flex justify-between font-bold text-slate-700">
+                        <span>Phòng: ${o.room} (${o.building})</span>
+                        <span class="px-2 py-0.5 rounded ${o.status === 'Đã giao' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${o.status}</span>
+                    </div>
+                    <div class="text-slate-600">Số lượng: <b>${o.qty} bình 20L</b> - Lúc: ${o.time}</div>
+                </div>
+            `).join('');
+        }
+
+        function updateAdminDashboard() {
+            let total = 0;
+            for (let b in stocks) {
+                document.getElementById(`stock-${b.toLowerCase().replace(' ', '-')}`).innerText = stocks[b].stock;
+                document.getElementById(`vouch-${b.toLowerCase().replace(' ', '-')}`).innerText = stocks[b].vouch;
+                total += stocks[b].stock;
+            }
+            document.getElementById('admin-total-stock').innerText = `Tổng: ${total} bình`;
+
+            let container = document.getElementById('admin-orders-list');
+            document.getElementById('badge-order-count').innerText = orders.length;
+
+            if (orders.length === 0) {
+                container.innerHTML = `<div class="text-center py-6 text-slate-400 text-xs">Chưa có đơn hàng nào từ sinh viên.</div>`;
+                return;
+            }
+
+            container.innerHTML = orders.map((o, index) => `
+                <div class="p-3 border rounded-xl bg-slate-50 space-y-2 border-l-4 ${o.status === 'Đã giao' ? 'border-l-emerald-500 opacity-60' : 'border-l-blue-500'}">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="font-bold text-sm text-slate-900">${o.name} - Phòng: ${o.room}</div>
+                            <div class="text-xs text-blue-700 font-semibold">Tòa: ${o.building} | Số lượng: ${o.qty} bình (20L)</div>
+                        </div>
+                        <span class="text-[10px] bg-white border px-2 py-0.5 rounded text-slate-500">${o.time}</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-1 border-t">
+                        <a href="tel:${o.phone}" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1">
+                            <span>📞 Gọi: ${o.phone}</span>
+                        </a>
+                        <div class="space-x-1">
+                            ${o.status !== 'Đã giao' ? `
+                                <button onclick="completeOrder(${index})" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">✅ Đã giao</button>
+                            ` : `
+                                <span class="text-xs text-emerald-600 font-bold">✔ Hoàn tất</span>
+                            `}
+                            <button onclick="deleteOrder(${index})" class="text-red-500 hover:bg-red-50 px-2 py-1 rounded text-xs">❌ Xóa</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function completeOrder(index) {
+            let o = orders[index];
+            if (o.status !== 'Đã giao') {
+                o.status = 'Đã giao';
+                if (stocks[o.building]) {
+                    stocks[o.building].stock = Math.max(0, stocks[o.building].stock - o.qty);
+                    stocks[o.building].vouch += o.qty;
+                }
+                saveAndSync();
+                if(!isStudentMode) updateAdminDashboard();
+            }
+        }
+
+        function deleteOrder(index) {
+            if(confirm("Bạn có chắc muốn xóa đơn này?")) {
+                orders.splice(index, 1);
+                saveAndSync();
+                if(!isStudentMode) updateAdminDashboard();
+            }
+        }
+
+        function clearAllOrders() {
+            if(confirm("Xóa toàn bộ danh sách đơn hàng?")) {
+                orders = [];
+                saveAndSync();
+                if(!isStudentMode) updateAdminDashboard();
+            }
+        }
+
+        function saveAndSync() {
+            localStorage.setItem('ktx_orders', JSON.stringify(orders));
+            localStorage.setItem('ktx_stocks', JSON.stringify(stocks));
+
+            fetch(`https://ntfy.sh/${CHANNEL_NAME}`, {
+                method: 'POST',
+                body: JSON.stringify({ orders, stocks })
+            }).catch(err => console.log(err));
+        }
+
+        function syncCloudData() {
+            fetch(`https://ntfy.sh/${CHANNEL_NAME}/json?poll=1`)
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.message) {
+                    let parsed = JSON.parse(data.message);
+                    if (parsed.orders) {
+                        orders = parsed.orders;
+                        stocks = parsed.stocks || stocks;
+                        localStorage.setItem('ktx_orders', JSON.stringify(orders));
+                        localStorage.setItem('ktx_stocks', JSON.stringify(stocks));
+                        if(!isStudentMode) {
+                            updateAdminDashboard();
+                            document.getElementById('audio-bell').play().catch(e => {});
+                        }
+                    }
+                }
+            }).catch(e => {});
+        }
+
+        function initCloudStream() {
+            const eventSource = new EventSource(`https://ntfy.sh/${CHANNEL_NAME}/sse`);
+            eventSource.onmessage = function(event) {
+                try {
+                    let data = JSON.parse(event.data);
+                    let parsed = JSON.parse(data.message);
+                    if (parsed.orders) {
+                        orders = parsed.orders;
+                        stocks = parsed.stocks || stocks;
+                        localStorage.setItem('ktx_orders', JSON.stringify(orders));
+                        localStorage.setItem('ktx_stocks', JSON.stringify(stocks));
+                        if(!isStudentMode) {
+                            updateAdminDashboard();
+                            document.getElementById('audio-bell').play().catch(e => {});
+                        }
+                    }
+                } catch(e) {}
+            };
+        }
+
+        function copyShareLink() {
+            let input = document.getElementById('share-link-input');
+            input.select();
+            document.execCommand('copy');
+            alert("📋 Đã copy link đặt nước của sinh viên!");
+        }
+    </script>
+</body>
+</html>
